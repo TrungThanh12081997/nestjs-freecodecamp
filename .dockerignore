@@ -1,7 +1,6 @@
 # compiled output
 /dist
 /node_modules
-/docs
 
 # Logs
 logs
@@ -41,14 +40,4 @@ lerna-debug.log*
 .cache
 .puppeteerCache
 .db-data
-package-lock.json
-globalConfig.json
 
-globalConfig.json
-
-scripts/
-
-replace_localhost.sh
-test_reports
-junit.xml
-.vscode

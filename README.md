@@ -1,73 +1,284 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+## Pynx Microservices
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-  
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Pre requisites
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+```
+Node >14.15
+Yarn 1.17+
+```
 
 ## Installation
 
 ```bash
-$ npm install
+$ yarn
+```
+
+## Setting up environment variables
+
+```
+Go to each app folder
+Copy .env.example to .env
+Setup variables on .env file
+```
+
+## Running database and seeding data
+
+```bash
+$ docker-compose up -d mongo mongo-express
+$ yarn db:restore
+
+You can check web dashboard (mongo-express) on http://localhost:8081
 ```
 
 ## Running the app
 
 ```bash
 # development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
+$ yarn run start:{service-name}:dev
 
 # production mode
-$ npm run start:prod
+$ yarn run start:{service-name}:prod
 ```
 
-## Test
+## End to End Tests
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+$ yarn test:e2e
 ```
 
-## Support
+## Running all microservices in local environment (docker)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+$ docker-compose up -d
+```
 
-## Stay in touch
+## New services [(nestjs docs reference)](https://docs.nestjs.com/cli/monorepo#monorepo-mode)
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+#### Generating the new service
 
-## License
+On your terminal at project root, run the following command to create a new service
 
-  Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```
+$ nest generate app {service_name}
+```
+
+#### Running the new service
+
+On package.json at "scripts" add the following lines
+
+```
+"build:{service_name}": "nest build {service_name}",
+"start:{service_name}": "cross-env SERVICE_NAME={service_name} nest start {service_name}",
+"start:{service_name}:dev": "yarn run start:{service_name} --watch",
+"start:{service_name}:prod": "node dist/apps/{service_name}/main",
+```
+
+Change default module file to app.module.ts and module name to AppModule
+Add BaseModule to app.module.ts **imports**
+
+On service main.ts add these lines
+title = Service name on swagger
+ws-path = path on loadbalancer (examples: /ws-alpha, /ws-beta) (do not forget the slash '/' at start)
+
+```
+bootstrap(AppModule, { title: 'Alpha API', server: '/ws-alpha' }, { queue: 'alpha' });
+```
+
+Create the .env file on service root (close to src folder, test folder and tsconfig.app.json file)
+
+```
+# APP CONFIG
+
+APP_PORT = 3000
+
+# DATABASE CONFIG
+
+DATABASE_URL = mongodb://mongo:mongo@localhost:27017/admin
+
+```
+
+Run in dev mode (hot reload)
+
+```
+$ yarn run start:{service_name}:dev
+```
+
+# Development lifecycle
+
+```mermaid
+graph LR
+subgraph design [Design]
+  documentation[Documentation<br> Controller & DTOs]
+  docu(docu)
+end
+subgraph Development
+  dev[Development]
+  e2e[Jest Test]
+  feat1(feature/NES-XXX-ZZZZZZ)
+  bugfix1(bugfix/NES-XXX-ZZZZZZ)
+  hotfix1(hotfix/NES-XXX-ZZZZZZ)
+end
+subgraph Regression
+  Meteor
+  Cypress
+  feat2(feature/NES-XXX-ZZZZZZ)
+  bugfix2(bugfix/NES-XXX-ZZZZZZ)
+  hotfix2(hotfix/NES-XXX-ZZZZZZ)
+end
+subgraph Done
+  Sandpit
+  Production
+  develop(develop)
+  master(master)
+end
+
+documentation --> e2e
+documentation --> dev
+dev --> Meteor
+e2e --> Meteor
+Meteor --> Cypress
+Cypress --> Sandpit
+Sandpit --> Production
+
+docu -.-> feat1
+docu -.-> bugfix1
+docu -.-> hotfix1
+feat1 -.-> feat2
+bugfix1 -.-> bugfix2
+hotfix1 -.-> hotfix2
+feat2 -.-> develop
+bugfix2 -.-> develop
+hotfix2 -.-> develop
+develop -.-> master
+
+style documentation fill:#85bbf0,stroke:#5d82a8,color:#000000
+style Production fill:#85bbf0,stroke:#5d82a8,color:#000000
+style Sandpit fill:#85bbf0,stroke:#5d82a8,color:#000000
+
+style e2e fill:#85bbf0,color:red
+style Cypress fill:#85bbf0,color:red
+
+```
+
+## Developer Environment
+
+Start mongo
+
+```
+$ docker-compose up -d mongo mongo-express
+```
+
+Start Alpha on Tab 1
+
+```
+$ yarn run start:alpha:dev
+```
+
+Start Beta on Tab 2
+
+```
+$ yarn run start:beta:dev
+```
+
+Start Meteor on Tab 3
+
+```
+$ cd app-meteor
+$ bash run.sh
+```
+
+## Local Docker
+
+| Container       |                                              |
+| :-------------- | :------------------------------------------: |
+| Meteor          |                localhost:3000                |
+| Alpha           |                                              |
+| Beta            |                                              |
+| Database        | mongodb://mongo:mongo@localhost:27017/meteor |
+| Queue           |            http://localhost:15672            |
+| Storage         |                                              |
+| Mailer          |                     N/A                      |
+| Payment Gateway |                                              |
+| CRM             |                                              |
+| Google Maps     |                                              |
+| Monitoring      |                                              |
+
+## Cypress
+
+Start mongo
+
+```
+$ docker-compose up -d mongo mongo-express
+```
+
+Start Alpha on Tab 1
+
+```
+$ yarn run start:alpha:dev
+```
+
+Start Beta on Tab 2
+
+```
+$ yarn run start:beta:dev
+```
+
+Start Meteor on Tab 3
+
+```
+$ cd app-meteor
+$ npm run start:test
+```
+
+Start Meteor on Tab 4
+
+```
+$ cd app-meteor
+$ npm run cypress:report
+```
+
+| Container       |     |
+| :-------------- | :-: |
+| Meteor          |     |
+| Alpha           |     |
+| Beta            |     |
+| Database        |     |
+| Queue           |     |
+| Storage         |     |
+| Mailer          | N/A |
+| Payment Gateway |     |
+| CRM             |     |
+| Google Maps     |     |
+| Monitoring      |     |
+
+## Sandpit
+
+| Container       |                                                                                                                                                                                                                            |
+| :-------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| Meteor          |                                                                                                                                                                                                                            |
+| Alpha           |                                                                                      https://api.sandpit.comm.care/ws-alpha/documents                                                                                      |
+| Beta            |                                                                                      https://api.sandpit.comm.care/ws-beta/documents                                                                                       |
+| Database URI    | mongodb://sandpit:queseyo@sandpit-shard-00-00-shjyc.mongodb.net:27017,sandpit-shard-00-01-shjyc.mongodb.net:27017,sandpit-shard-00-02-shjyc.mongodb.net:27017/sandpit?authSource=admin&replicaSet=Sandpit-shard-0&ssl=true |
+| Queue           |                                                                                                                                                                                                                            |
+| Storage         |                                                                                                                                                                                                                            |
+| Mailer          |                                                                                                            N/A                                                                                                             |
+| Payment Gateway |                                                                                                                                                                                                                            |
+| CRM             |                                                                                                                                                                                                                            |
+| Google Maps     |                                                                                                                                                                                                                            |
+| Monitoring      |                                                                                                                                                                                                                            |
+
+## Prod
+
+| Container       |     |
+| :-------------- | :-: |
+| Meteor          |     |
+| Alpha           |     |
+| Beta            |     |
+| Database        |     |
+| Queue           |     |
+| Storage         |     |
+| Mailer          | N/A |
+| Payment Gateway |     |
+| CRM             |     |
+| Google Maps     |     |
+| Monitoring      |     |
